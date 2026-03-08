@@ -92,10 +92,6 @@ jobs:
     - name: Building OrangeFox
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
-        
-        # أمر فك الضغط عن الكيرنال
-        gunzip device/xiaomi/${{ inputs.DEVICE_NAME }}/prebuilt/Image.gz || true
-        
         set +e
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
