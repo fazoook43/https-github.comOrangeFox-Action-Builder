@@ -82,7 +82,7 @@ jobs:
         cd ${{ inputs.DEVICE_PATH }}
         echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
-        - name: Building PBRP
+    - name: Building PBRP
       run: |
         cd ${GITHUB_WORKSPACE}/Workspace
         set +e
