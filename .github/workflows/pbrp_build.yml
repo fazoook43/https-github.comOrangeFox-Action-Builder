@@ -82,16 +82,16 @@ jobs:
         cd ${{ inputs.DEVICE_PATH }}
         echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
-        - name: Building PBRP
+    - name: Building PBRP
       run: |
         cd ${GITHUB_WORKSPACE}/Workspace
         
         echo "==========================================="
-        echo "🚀 Properly Disabling clang-tidy..."
+        echo "🔧 Safely disabling clang-tidy strictness..."
         echo "==========================================="
-        #Neom
-        find system/ -name "Android.bp" -exec sed -i '/tidy_checks_as_errors/d' {} + || true
-        find system/ -name "Android.bp" -exec sed -i 's/tidy: true/tidy: false/g' {} + || true
+        # التعديل ده آمن جداً ومبيكسرش لغة البرمجة بتاعة الملفات
+        find system/ -name "Android.bp" -type f -exec sed -i 's/tidy: true/tidy: false/g' {} + || true
+        find system/ -name "Android.bp" -type f -exec sed -i 's/tidy:true/tidy:false/g' {} + || true
         
         set +e
         source build/envsetup.sh
@@ -103,6 +103,7 @@ jobs:
         export BUILD_USERNAME=Mostafameesr
         export BUILD_HOSTNAME=Mostafa-Labs
         set -e
+        
         lunch twrp_${{ inputs.DEVICE_NAME }}-eng && make clean && mka ${{ inputs.BUILD_TARGET }}image
 
     - name: Set Release Properties
