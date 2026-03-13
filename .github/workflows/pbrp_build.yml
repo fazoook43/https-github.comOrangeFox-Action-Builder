@@ -88,6 +88,11 @@ jobs:
         set +e
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
+        export DISABLE_ARTIFACT_PATH_REQUIREMENTS=true
+        export WITHOUT_CHECK_API=true
+        export SKIP_ABI_CHECKS=true
+        export BUILD_USERNAME=Mostafameesr
+        export BUILD_HOSTNAME=Mostafa-Labs
         set -e
         lunch twrp_${{ inputs.DEVICE_NAME }}-eng && make clean && mka ${{ inputs.BUILD_TARGET }}image
 
