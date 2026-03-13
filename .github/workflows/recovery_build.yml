@@ -1,4 +1,4 @@
-name: Universal Recovery Builder (PBRP-Official-Style)
+name: Universal Recovery Builder (Mostafameesr Edition)
 
 on:
   workflow_dispatch:
@@ -12,16 +12,6 @@ on:
         - PBRP
         - OrangeFox
         - TWRP
-
-env:
-  MANIFEST_URL: "https://github.com/PitchBlackRecoveryProject/manifest_pb"
-  MANIFEST_BRANCH: "android-12.1"
-  DEVICE_TREE_URL: "https://github.com/Mostafameesr/Neom_android_device_xiaomi_sweet-TWRP"
-  DEVICE_TREE_BRANCH: "pbrp_12.1"
-  DEVICE_PATH: "device/xiaomi/sweet"
-  DEVICE_NAME: "sweet"
-  MAKEFILE_NAME: "twrp_sweet"
-  BUILD_TARGET: "recovery"
 
 jobs:
   build:
@@ -42,45 +32,62 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y gperf gcc-multilib gcc-10-multilib g++-multilib g++-10-multilib libc6-dev-i386 lib32ncurses5-dev x11proto-core-dev libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils xsltproc unzip fontconfig
 
-    - name: Set up Repo
+    - name: Set up Repo Tool
       run: |
         mkdir ~/bin
         curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
         chmod a+x ~/bin/repo
         sudo ln -sf ~/bin/repo /usr/bin/repo
 
-    - name: Sync Manifest (Corrected PBRP Link)
+    - name: Sync Manifest (Dynamic Selection)
       run: |
         mkdir work
         cd work
-        repo init -u ${{ env.MANIFEST_URL }} -b ${{ env.MANIFEST_BRANCH }}
+        if [ "${{ github.event.inputs.RECOVERY_TYPE }}" == "PBRP" ]; then
+          repo init -u https://github.com/PitchBlackRecoveryProject/manifest_pb -b android-12.1
+        elif [ "${{ github.event.inputs.RECOVERY_TYPE }}" == "OrangeFox" ]; then
+          repo init -u https://gitlab.com/OrangeFox/Manifest.git -b 12.1
+        else
+          repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twr_aosp.git -b twrp-12.1
+        fi
         repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
 
-    - name: Clone Device Tree
+    - name: Clone Device Tree (Automatic Branch Selection)
       run: |
         cd work
-        git clone ${{ env.DEVICE_TREE_URL }} -b ${{ env.DEVICE_TREE_BRANCH }} ${{ env.DEVICE_PATH }}
+        if [ "${{ github.event.inputs.RECOVERY_TYPE }}" == "PBRP" ]; then
+          BRANCH="pbrp_12.1"
+        elif [ "${{ github.event.inputs.RECOVERY_TYPE }}" == "OrangeFox" ]; then
+          BRANCH="fox_12.1"
+        else
+          BRANCH="twrp_12.1"
+        fi
+        git clone https://github.com/Mostafameesr/Neom_android_device_xiaomi_sweet-TWRP -b $BRANCH device/xiaomi/sweet
 
-    - name: Build PBRP
+    - name: Build Recovery
       run: |
         cd work
         . build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
-        lunch ${{ env.MAKEFILE_NAME }}-eng
-        mka p recoveryimage -j$(nproc --all)
+        lunch twrp_sweet-eng
+        if [ "${{ github.event.inputs.RECOVERY_TYPE }}" == "OrangeFox" ]; then
+          mka recoveryimage -j$(nproc --all)
+        else
+          mka p recoveryimage -j$(nproc --all)
+        fi
 
     - name: Upload Release
       uses: softprops/action-gh-release@v2
       if: success()
       with:
         files: |
-          work/out/target/product/${{ env.DEVICE_NAME }}/recovery.img
-          work/out/target/product/${{ env.DEVICE_NAME }}/*.zip
-        tag_name: PBRP-${{ env.DEVICE_NAME }}-${{ github.run_id }}
-        name: PBRP Official-style for ${{ env.DEVICE_NAME }}
+          work/out/target/product/sweet/recovery.img
+          work/out/target/product/sweet/*.zip
+        tag_name: ${{ github.event.inputs.RECOVERY_TYPE }}-sweet-${{ github.run_id }}
+        name: ${{ github.event.inputs.RECOVERY_TYPE }} for Redmi Note 10 Pro
         body: |
-          Build: PBRP 4.0
-          Device: Redmi Note 10 Pro (sweet)
+          Build: ${{ github.event.inputs.RECOVERY_TYPE }}
+          Device: sweet
           Maintainer: @Mostafameesr
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
