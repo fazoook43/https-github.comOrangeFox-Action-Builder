@@ -82,14 +82,14 @@ jobs:
         cd ${{ inputs.DEVICE_PATH }}
         echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
-    - name: Building PBRP
+        - name: Building PBRP
       run: |
         cd ${GITHUB_WORKSPACE}/Workspace
         set +e
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
         set -e
-        lunch twrp_${{ inputs.DEVICE_NAME }}-eng && make clean && mka p ${{ inputs.BUILD_TARGET }}image
+        lunch twrp_${{ inputs.DEVICE_NAME }}-eng && make clean && mka ${{ inputs.BUILD_TARGET }}image
 
     - name: Set Release Properties
       run: |
