@@ -93,10 +93,6 @@ jobs:
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
         
-        echo "=== 📥 Downloading missing AOSP audio headers for Vibrator ==="
-        rm -rf system/media
-        git clone https://android.googlesource.com/platform/system/media -b android-14.0.0_r1 system/media
-        
         set +e
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
