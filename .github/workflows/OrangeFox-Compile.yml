@@ -93,12 +93,18 @@ jobs:
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
         
-        # التبديل لفرع R12 الجديد في المسار الصحيح للـ vendor
+        # التبديل لفرع R12 الجديد في الواجهة (vendor) والمحرك (bootable)
         if [ "${{ inputs.RECOVERY_VERSION }}" == "R12.1-Beta" ]; then
-          echo "Fetching R12.1 New Source from vendor/recovery..."
+          echo "Fetching R12.1 New Source for Vendor..."
           cd vendor/recovery
           git fetch https://gitlab.com/OrangeFox/vendor/recovery fox_12.1-R12-new
           git checkout FETCH_HEAD
+          cd ../..
+
+          echo "Fetching R12.1 New Source for Bootable (Engine)..."
+          cd bootable/recovery
+          git fetch https://gitlab.com/OrangeFox/bootable/Recovery fox_12.1-R12-new || echo "No separate R12 branch for bootable, using default"
+          git checkout FETCH_HEAD || true
           cd ../..
         fi
 
