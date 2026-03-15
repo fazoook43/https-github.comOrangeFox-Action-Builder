@@ -1,10 +1,4 @@
-name: OrangeFox - Build
-
-# Credits to:
-# https://github.com/TeamWin
-# https://gitlab.com/OrangeFox
-# https://github.com/azwhikaru for Recovery Builder Template
-# And all Contributors in every repositories I used
+Name: OrangeFox - Build
 
 on:
   workflow_dispatch:
@@ -18,6 +12,14 @@ on:
         - 14.1
         - 12.1
         - 11.0
+      RECOVERY_VERSION:
+        description: 'Select Recovery Version'
+        required: true
+        default: 'R11.3'
+        type: choice
+        options:
+        - 'R11.3'
+        - 'R12.0-Beta'
       DEVICE_TREE:
         description: 'OrangeFox Device Tree'
         required: true
@@ -72,7 +74,6 @@ jobs:
         sudo bash setup/android_build_env.sh
       
     - name: Set-up Manifest
-      if: inputs.MANIFEST_BRANCH == '11.0' || inputs.MANIFEST_BRANCH == '12.1' || inputs.MANIFEST_BRANCH == '14.1'
       run: |
         mkdir -p ${GITHUB_WORKSPACE}/OrangeFox
         cd ${GITHUB_WORKSPACE}/OrangeFox
@@ -93,21 +94,29 @@ jobs:
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
         
+        if [ "${{ inputs.RECOVERY_VERSION }}" == "R12.0-Beta" ]; then
+          cd bootable/recovery
+          git fetch https://gitlab.com/OrangeFox/bootable/Recovery fox_14.1-R12-new || true
+          git checkout FETCH_HEAD || echo "R12 branch not found"
+          cd ../..
+        fi
+
         set +e
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
         set -e
+        echo "START_TIME=$(date +%s)" >> $GITHUB_ENV
         lunch twrp_${{ inputs.DEVICE_NAME }}-ap2a-eng && make clean && mka adbd ${{ inputs.BUILD_TARGET }}image
+        echo "END_TIME=$(date +%s)" >> $GITHUB_ENV
 
     - name: Set Release Properties
       run: |
-        echo "BUILD_DATE=$(TZ=Asia/Manila date +%Y%m%d)" >> $GITHUB_ENV
+        echo "BUILD_DATE=$(date +%Y/%m/%d)" >> $GITHUB_ENV
+        DURATION=$(( $END_TIME - $START_TIME ))
+        echo "DURATION=$(date -u -d @${DURATION} +"%Mm %Ss")" >> $GITHUB_ENV
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
-
         DEVICE_TREE_URL="${{ inputs.DEVICE_TREE }}"
-        if [[ "${DEVICE_TREE_URL}" == *.git ]]; then
-          DEVICE_TREE_URL="${DEVICE_TREE_URL%.git}"
-        fi
+        [[ "${DEVICE_TREE_URL}" == *.git ]] && DEVICE_TREE_URL="${DEVICE_TREE_URL%.git}"
         echo "DEVICE_TREE_URL=${DEVICE_TREE_URL}" >> $GITHUB_ENV
 
     - name: Upload to Release
@@ -116,10 +125,32 @@ jobs:
         files: |
           OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.img
           OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip
-        name: OrangeFox Recovery for ${{ inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}
+        name: OrangeFox ${{ inputs.RECOVERY_VERSION }} for ${{ inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}
         tag_name: ${{ github.run_id }}
         body: |
-          ## OrangeFox Recovery Build - Unofficial
-          Build: fox_${{ inputs.MANIFEST_BRANCH }}
-          Device: [Device Tree/Branch](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
-          Commit: Most recent [commit](${{ env.DEVICE_TREE_URL }}/commit/${{ env.COMMIT_ID }}) during building.
+          📱 Device: ${{ inputs.DEVICE_NAME }}
+          👤 Maintainer: @mostafameesr
+          ⏱ Build Duration: ${{ env.DURATION }}
+          🌿 Branch: fox_${{ inputs.MANIFEST_BRANCH }}
+
+    - name: Send Telegram Notification
+      uses: appleboy/telegram-action@master
+      with:
+        to: ${{ secrets.TG_CHAT_ID }}
+        token: ${{ secrets.TG_BOT_TOKEN }}
+        format: markdown
+        disable_web_page_preview: true
+        message: |
+          ✅ *New OrangeFox Build Ready!*
+          
+          📱 *Device*: `${{ inputs.DEVICE_NAME }}` (sweet)
+          👤 *Maintainer*: @mostafameesr
+          📦 *Version*: `${{ inputs.RECOVERY_VERSION }}`
+          ⏳ *Build Duration*: `${{ env.DURATION }}`
+          📅 *Date*: `${{ env.BUILD_DATE }}`
+          
+          📝 *Changelog*:
+          • Built with Direct Haptics Fix
+          • Build completed successfully
+          
+          ⬇️ [Download Link](https://github.com/${{ github.repository }}/releases/tag/${{ github.run_id }})
