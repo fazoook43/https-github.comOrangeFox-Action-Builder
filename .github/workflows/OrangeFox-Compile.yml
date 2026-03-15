@@ -1,4 +1,4 @@
-Name: OrangeFox - Build (14.1)
+name: OrangeFox - Build (14.1)
 
 on:
   workflow_dispatch:
