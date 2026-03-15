@@ -1,4 +1,4 @@
-name: OrangeFox - Build (12.1)
+Name: OrangeFox - Build (12.1)
 
 on:
   workflow_dispatch:
@@ -93,10 +93,10 @@ jobs:
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
         
-        # التبديل لفرع R12 الجديد الخاص بـ 12.1 من الرابط الصحيح للـ vendor
+        # التبديل لفرع R12 الجديد في المسار الصحيح للـ vendor
         if [ "${{ inputs.RECOVERY_VERSION }}" == "R12.1-Beta" ]; then
           echo "Fetching R12.1 New Source from vendor/recovery..."
-          cd bootable/recovery
+          cd vendor/recovery
           git fetch https://gitlab.com/OrangeFox/vendor/recovery fox_12.1-R12-new
           git checkout FETCH_HEAD
           cd ../..
@@ -114,7 +114,7 @@ jobs:
       run: |
         echo "BUILD_DATE=$(date +%Y/%m/%d)" >> $GITHUB_ENV
         DURATION=$(( $END_TIME - $START_TIME ))
-        echo "DURATION=$(date -u -d @${DURATION} +"%Mm %Ss")" >> $GITHUB_ENV
+        echo "DURATION=$(date -u -d @${DURATION} +\"%Mm %Ss\")" >> $GITHUB_ENV
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
         DEVICE_TREE_URL="${{ inputs.DEVICE_TREE }}"
         [[ "${DEVICE_TREE_URL}" == *.git ]] && DEVICE_TREE_URL="${DEVICE_TREE_URL%.git}"
@@ -141,53 +141,3 @@ jobs:
         -d chat_id=${{ secrets.TG_CHAT_ID }} \
         -d parse_mode=markdown \
         -d text="✅ *New OrangeFox 12.1 Build Ready!*%0A%0A📱 *Device*: \`${{ inputs.DEVICE_NAME }}\` (sweet)%0A👤 *Maintainer*: @mostafameesr%0A📦 *Version*: \`${{ inputs.RECOVERY_VERSION }}\`%0A⏳ *Build Duration*: \`${{ env.DURATION }}\`%0A🌿 *Branch*: \`fox_${{ inputs.MANIFEST_BRANCH }}\`%0A%0A⬇️ [Download From GitHub](https://github.com/${{ github.repository }}/releases/tag/${{ github.run_id }})"
-        set +e
-        source build/envsetup.sh
-        export ALLOW_MISSING_DEPENDENCIES=true
-        set -e
-        echo "START_TIME=$(date +%s)" >> $GITHUB_ENV
-        lunch twrp_${{ inputs.DEVICE_NAME }}-eng && make clean && mka adbd ${{ inputs.BUILD_TARGET }}image
-        echo "END_TIME=$(date +%s)" >> $GITHUB_ENV
-
-    - name: Set Release Properties
-      run: |
-        echo "BUILD_DATE=$(date +%Y/%m/%d)" >> $GITHUB_ENV
-        DURATION=$(( $END_TIME - $START_TIME ))
-        echo "DURATION=$(date -u -d @${DURATION} +"%Mm %Ss")" >> $GITHUB_ENV
-        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
-        DEVICE_TREE_URL="${{ inputs.DEVICE_TREE }}"
-        [[ "${DEVICE_TREE_URL}" == *.git ]] && DEVICE_TREE_URL="${DEVICE_TREE_URL%.git}"
-        echo "DEVICE_TREE_URL=${DEVICE_TREE_URL}" >> $GITHUB_ENV
-
-    - name: Upload to Release
-      uses: softprops/action-gh-release@v2
-      with:
-        files: |
-          OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.img
-          OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip
-        name: OrangeFox ${{ inputs.RECOVERY_VERSION }} (12.1) // ${{ env.BUILD_DATE }}
-        tag_name: ${{ github.run_id }}
-        body: |
-          ## OrangeFox Recovery Build - ${{ inputs.RECOVERY_VERSION }}
-          - Device: `${{ inputs.DEVICE_NAME }}`
-          - Branch: `fox_${{ inputs.MANIFEST_BRANCH }}`
-          - Maintainer: @mostafameesr
-          - Duration: `${{ env.DURATION }}`
-
-    - name: Send Telegram Notification
-      uses: appleboy/telegram-action@master
-      with:
-        to: ${{ secrets.TG_CHAT_ID }}
-        token: ${{ secrets.TG_BOT_TOKEN }}
-        format: markdown
-        disable_web_page_preview: true
-        message: |
-          ✅ *New OrangeFox 12.1 Build Ready!*
-          
-          📱 *Device*: `${{ inputs.DEVICE_NAME }}` (sweet)
-          👤 *Maintainer*: @mostafameesr
-          📦 *Version*: `${{ inputs.RECOVERY_VERSION }}`
-          ⏳ *Build Duration*: `${{ env.DURATION }}`
-          🌿 *Branch*: `fox_${{ inputs.MANIFEST_BRANCH }}`
-          
-          ⬇️ [Download From GitHub](https://github.com/${{ github.repository }}/releases/tag/${{ github.run_id }})
