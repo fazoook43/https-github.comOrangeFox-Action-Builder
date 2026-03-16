@@ -88,22 +88,16 @@ jobs:
         cd ${{ inputs.DEVICE_PATH }}
         echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
-    - name: Building OrangeFox
+        - name: Building OrangeFox
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
         
-        # التبديل لفرع R12 الجديد في الواجهة (vendor) والمحرك (bootable)
+        # التبديل لفرع R12 الجديد في الواجهة بس (vendor) عشان نتفادى الكراش
         if [ "${{ inputs.RECOVERY_VERSION }}" == "R12.0-Beta" ]; then
           echo "Fetching R12.0 New Source for Vendor..."
           cd vendor/recovery
           git fetch https://gitlab.com/OrangeFox/vendor/recovery fox_14.1-R12-new
           git checkout FETCH_HEAD
-          cd ../..
-
-          echo "Fetching R12.0 New Source for Bootable (Engine)..."
-          cd bootable/recovery
-          git fetch https://gitlab.com/OrangeFox/bootable/Recovery fox_14.1-R12-new || echo "No separate R12 branch for bootable, using default"
-          git checkout FETCH_HEAD || true
           cd ../..
         fi
 
