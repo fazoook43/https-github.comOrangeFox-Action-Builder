@@ -93,13 +93,6 @@ jobs:
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
         
-        # سحب الواجهة الجديدة بس (لأن المحرك ملوش فرع زي ما الصور أثبتت)
-        echo "Fetching R12 New Source for Vendor..."
-        cd vendor/recovery
-        git fetch https://gitlab.com/OrangeFox/vendor/recovery fox_12.1-R12-new
-        git checkout FETCH_HEAD
-        cd ../..
-
         set +e
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
