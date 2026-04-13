@@ -6,7 +6,7 @@ on:
       SYNC_SOURCE:
         description: 'Select Sync Source'
         required: true
-        default: 'GitLab'
+        default: 'GitHub'
         type: choice
         options:
           - 'GitLab'
@@ -14,7 +14,7 @@ on:
       MANIFEST_BRANCH:
         description: 'OrangeFox Manifest Branch'
         required: true
-        default: '12.1'
+        default: '16.0'
         type: choice
         options:
           - '12.1'
@@ -27,7 +27,7 @@ on:
       DEVICE_TREE_BRANCH:
         description: 'OrangeFox Device Tree Branch'
         required: true
-        default: 'fox_12.1'
+        default: 'fox_16.0'
       DEVICE_PATH:
         description: 'Specify your Device Path'
         required: true
@@ -118,8 +118,15 @@ jobs:
           set +e
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
+          
+          if [ "${{ inputs.MANIFEST_BRANCH }}" = "16.0" ]; then
+            lunch twrp_${{ inputs.DEVICE_NAME }}-bp2a-eng
+          else
+            lunch twrp_${{ inputs.DEVICE_NAME }}-eng
+          fi
+          
           set -e
-          lunch twrp_${{ inputs.DEVICE_NAME }}-eng && make clean && mka adbd ${{ inputs.BUILD_TARGET }}image
+          make clean && mka adbd ${{ inputs.BUILD_TARGET }}image
 
       - name: Set Release Properties
         run: |
@@ -139,6 +146,8 @@ jobs:
           tag_name: Build-${{ github.run_id }}-${{ env.BUILD_DATE }}
           body: |
             ## OrangeFox Recovery Build
-            - **Device:** ${{ inputs.DEVICE_NAME }}
+            - **Device:** ${{ inputs.DEVICE_NAME }} (sweet)
             - **Sync Source:** ${{ inputs.SYNC_SOURCE }}
+            - **Manifest Branch:** ${{ inputs.MANIFEST_BRANCH }}
+            - **Build Type:** ${{ inputs.MANIFEST_BRANCH == '16.0' && 'bp2a-eng' || 'eng' }}
             - **Commit:** [Link](${{ env.DEVICE_TREE_URL }}/commit/${{ env.COMMIT_ID }})
