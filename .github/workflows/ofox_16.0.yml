@@ -1,4 +1,4 @@
-name: OrangeFox -fox16.0-test- Build
+name: OrangeFox -fox16-0-test- Build
 
 on:
   workflow_dispatch:
