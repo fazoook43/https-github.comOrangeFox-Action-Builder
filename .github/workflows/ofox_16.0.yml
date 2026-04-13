@@ -1,16 +1,16 @@
-name: ofox-Beta- Build Beta
+name: OrangeFox -fox16.0-test- Build
 
 on:
   workflow_dispatch:
     inputs:
-      SYNC_REPO:
-        description: 'Select Sync Repository Source'
+      SYNC_SOURCE:
+        description: 'Select Sync Source'
         required: true
-        default: 'https://gitlab.com/OrangeFox/sync.git'
+        default: 'GitLab'
         type: choice
         options:
-          - 'https://gitlab.com/OrangeFox/sync.git'
-          - 'https://github.com/OrangeFox16/sync.git'
+          - 'GitLab'
+          - 'GitHub'
       MANIFEST_BRANCH:
         description: 'OrangeFox Manifest Branch'
         required: true
@@ -19,21 +19,15 @@ on:
         options:
           - '12.1'
           - '11.0'
+          - '16.0'
       DEVICE_TREE:
-        description: 'OrangeFox Device Tree URL'
+        description: 'OrangeFox Device Tree'
         required: true
         default: 'https://github.com/Mostafameesr/Neom_android_device_xiaomi_sweet-TWRP'
       DEVICE_TREE_BRANCH:
-        description: 'Select Device Tree Branch'
+        description: 'OrangeFox Device Tree Branch'
         required: true
         default: 'fox_12.1'
-        type: choice
-        options:
-          - 'fox_12.1'
-          - 'fox_11.0'
-          - 'master'
-          - 'test'
-          - 'testing'
       DEVICE_PATH:
         description: 'Specify your Device Path'
         required: true
@@ -62,7 +56,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: checkout@v4
 
       - name: Clean-up
         uses: rokibhasansagar/slimhub_actions@main
@@ -81,36 +75,41 @@ jobs:
 
       - name: Set-up Manifest & Authenticate
         run: |
-          # إعداد بيانات الدخول لـ GitLab و GitHub
-          git config --global url."https://oauth2:${{ secrets.GITLAB_TOKEN }}@gitlab.com/".insteadOf "https://gitlab.com/"
-          
           mkdir -p ${GITHUB_WORKSPACE}/OrangeFox
           cd ${GITHUB_WORKSPACE}/OrangeFox
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
           
-          # سحب السورس المختار من القائمة
-          git clone ${{ inputs.SYNC_REPO }} -b master sync_repo
-          cd sync_repo
-          
-          # التحقق من اسم سكريبت السنك (بيختلف بين جيتلاب وجيتهاب أحياناً)
-          if [ -f "orangefox_sync.sh" ]; then
+          if [ "${{ inputs.SYNC_SOURCE }}" = "GitLab" ]; then
+            git config --global url."https://oauth2:${{ secrets.GITLAB_TOKEN }}@gitlab.com/".insteadOf "https://gitlab.com/"
+            git clone https://gitlab.com/OrangeFox/sync.git -b master sync_dir
+            cd sync_dir
             ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
           else
-            bash sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
+            # السنك من GitHub (OrangeFox16)
+            git clone https://github.com/OrangeFox16/sync.git -b master sync_dir
+            cd sync_dir
+            # لو اخترت 16.0 هيستخدم مانيفست twrp-16.0 الموضح في الصورة
+            MANIFEST_VER=${{ inputs.MANIFEST_BRANCH }}
+            [ "$MANIFEST_VER" = "16.0" ] && MANIFEST_VER="twrp-16.0"
+            bash sync.sh --branch $MANIFEST_VER --path ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
           fi
 
       - name: Sync Beta Recovery & Vendor
         run: |
           cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
-          
-          # تحديث الريكفري للبيتا الخاص بـ R12 الجديد
           rm -rf bootable/recovery
-          git clone https://gitlab.com/OrangeFox/Testing/Recovery.git -b fox_12.1_R12-new bootable/recovery
-          
-          # تحديث الفيندور لفرع R12
           rm -rf vendor/recovery
-          git clone https://gitlab.com/OrangeFox/vendor/recovery.git -b fox_12.1-R12-new vendor/recovery
+          
+          if [ "${{ inputs.SYNC_SOURCE }}" = "GitLab" ]; then
+            # سورس GitLab (R12 Beta)
+            git clone https://gitlab.com/OrangeFox/Testing/Recovery.git -b fox_12.1_R12-new bootable/recovery
+            git clone https://gitlab.com/OrangeFox/vendor/recovery.git -b fox_12.1-R12-new vendor/recovery
+          else
+            # سورس GitHub (fox_16.0) كما في الصور
+            git clone https://github.com/OrangeFox16/android_bootable_recovery.git -b fox_16.0 bootable/recovery
+            git clone https://github.com/OrangeFox16/android_vendor_recovery.git -b fox_16.0 vendor/recovery
+          fi
 
       - name: Clone Device Tree
         run: |
@@ -142,13 +141,12 @@ jobs:
           files: |
             OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.img
             OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip
-          name: OrangeFox Recovery [${{ inputs.DEVICE_NAME }}] - Official Beta
+          name: OrangeFox Recovery [${{ inputs.DEVICE_NAME }}] // ${{ env.BUILD_DATE }}
           tag_name: Build-${{ github.run_id }}-${{ env.BUILD_DATE }}
           body: |
-            ## OrangeFox Recovery - Build Logs
+            ## OrangeFox Recovery Build
             - **Device:** ${{ inputs.DEVICE_NAME }}
-            - **Sync Source:** ${{ inputs.SYNC_REPO }}
+            - **Sync Source:** ${{ inputs.SYNC_SOURCE }}
+            - **Recovery/Vendor Branch:** ${{ inputs.SYNC_SOURCE == 'GitHub' && 'fox_16.0' || 'R12-new' }}
             - **Manifest:** ${{ inputs.MANIFEST_BRANCH }}
-            - **Tree Branch:** ${{ inputs.DEVICE_TREE_BRANCH }}
             - **Commit:** [Link](${{ env.DEVICE_TREE_URL }}/commit/${{ env.COMMIT_ID }})
-            - **Build Date:** ${{ env.BUILD_DATE }}
