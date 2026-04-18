@@ -84,7 +84,7 @@ jobs:
           chmod +x /tmp/tg_bot.sh
           /tmp/tg_bot.sh "🚀 *Starting OrangeFox Build*
           📱 **Device:** \`${{ inputs.DEVICE_NAME }}\`
-          🌿 **Branch:** \`${{ inputs.MANIFEST_BRANCH }}\` (R12_Beta)
+          🌿 **Branch:** \`${{ inputs.MANIFEST_BRANCH }}\` (R12 Beta)
           👤 **By:** \`${{ github.actor }}\`
           🔗 [View Live Workflow Run](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})" "all"
 
@@ -198,7 +198,7 @@ jobs:
           ⏱️ Build Time: $(($BUILD_DIFF / 60)) mins and $(($BUILD_DIFF % 60)) secs.
           
           📱 **Device:** \`${{ inputs.DEVICE_NAME }}\`
-          📦 **Android Version:** \`${{ inputs.MANIFEST_BRANCH }}\` (Fox_16_R12_Beta)
+          📦 **Android Version:** \`${{ inputs.MANIFEST_BRANCH }}\` (Fox16 R12 Beta)
           
           🔗 [📥 Click here to download Recovery files]($RELEASE_URL)" "all"
 
