@@ -165,20 +165,24 @@ jobs:
           echo "BUILD_DIFF=$BUILD_DIFF" >> $GITHUB_ENV
 
       - name: Dump Soong JSON (Debug)
-        if: always()
-        run: |
-          echo "===== DEBUG: soong variables ====="
-          FILE=OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/soong/soong.twrp_${{ inputs.DEVICE_NAME }}.extra.variables
-          
-          if [ -f "$FILE" ]; then
-            echo "File found: $FILE"
-            echo "----- CONTENT WITH LINE NUMBERS -----"
-            nl -ba "$FILE"
-          else
-            echo "File not found!"
-            echo "Listing soong directory:"
-            ls -R OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/soong || true
-          fi
+  if: always()
+  run: |
+    echo "===== DEBUG: soong variables ====="
+    DIR=OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/soong
+
+    echo "Listing possible files:"
+    ls $DIR | grep extra || true
+
+    FILE=$(ls $DIR/soong.*.extra.variables 2>/dev/null | head -n 1)
+
+    if [ -f "$FILE" ]; then
+      echo "File found: $FILE"
+      echo "----- CONTENT WITH LINE NUMBERS -----"
+      nl -ba "$FILE"
+    else
+      echo "No extra.variables file found!"
+      ls -R $DIR || true
+    fi
 
       - name: Set Release Properties
         run: |
